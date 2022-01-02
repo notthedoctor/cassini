@@ -36,4 +36,21 @@ The Cassini data files are accessible through an API at root directory https://p
  'coiss_3005_v1', 'coiss_3006_v4', 'coiss_3007'
 ```
 
-Our first job is going to be constructing a database of these images, there are something like 300k of these images and the current recommended method is to use *wget* to pull the entire data set. It takes about a second just in turnaround time for the labels so just pulling the labels will take a few days and a couple of Gb. We will probably want to select interesting images based on the label and minimize the amount we have to download from this very slow server. So we can improve our label stripping code we just pull a local copy of the labels using the file *src/pull_label_files.py*.
+Our first job is going to be constructing a database of these images, there are round about 440k of these images and the current recommended method is to use *wget* to pull the entire data set. It takes about a second just in turnaround time for the labels so just pulling the labels will take a few days and a couple of Gb. We will probably want to select interesting images based on the label and minimize the amount we have to download from this very slow server. So we can improve our label stripping code we just pull a local copy of the labels using the file *src/pull_label_files.py*.
+
+After finally pulling the lables we want to index then so we can start picking target files that might be interesting. The *src/label_files_to_summary.py* file does this and puts a .csv file in *out/label_summary.csv*.
+
+## Spacecraft location
+
+To pick out the interesting images we probably want to know where it is, this would involve using SPICE and loading the appropriate kernels:
+
+| ID | Type | File name |
+|---|---|---|
+|LSK|Leap seconds|naif0012.tls.pc|
+|SCLK|Spacecraft clock|cas00172.tsc|
+|PCK|Planetary constants|cpck15Dec2017.tpc|
+|FK|Reference frame|cas_v39.tf|
+|IK|Instrument geometry|cas_iss_v10.ti (Imaging Sub System only)|
+|SPK|Object trajectories|?|
+
+A lot of these are contained in a single file however for the object trajectories the file that we load depends on the time the image was taken. Nominally a human can parse the SPK kernel file name and figure out which one to use based on the image time however the file naming canges over time and it can get ambiguous near the edges. The label files contain the time span so if we take note of these time spans we have a better chance of figuring out which kernel to use. There are multiple versions of these kernels so we should also save the creation dates. The *src/make_kernal_summary.py* file creates the file *out/kernel_summary.csv*.

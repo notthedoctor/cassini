@@ -1,5 +1,5 @@
-local_data
-local_data/*
+local_data/image_cache/*
+local_data/kernel_cache/*
 kernels
 kernels/*
 apipull.py
