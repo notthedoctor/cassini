@@ -3,6 +3,8 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import re
+import os
+import urllib
 
 # Get file list from server
 baseUrl = "https://naif.jpl.nasa.gov/pub/naif/CASSINI/kernels/"
@@ -34,9 +36,17 @@ summary = pd.DataFrame(columns=['Spacecraft','Start','Stop','Created'])
 for l in labelList:
     # Want to go through all the kernal labels. Not buffering as there
     # aren't that many of them so just pull contents directly from web
-    r = requests.get(url=baseUrl+'spk/'+l)
+    #r = requests.get(url=baseUrl+'spk/'+l)
+    localFile = '../local_data/kernel_cache/spk/{}'.format(l)
+    fullUrl = '{}spk/{}'.format(baseUrl, l)
+    if not os.path.exists(localFile):
+        urllib.request.urlretrieve(fullUrl, localFile)
+    
+    with open(localFile, 'r') as file:
+        text = file.read()
+
     try:
-        labelDict = common.labelToDict(r.text)
+        labelDict = common.labelToDict(text)
 
         summary.loc[l[:-4]] = [  labelDict['SPACECRAFT_NAME'],
                                   common.dateConv(labelDict['START_TIME']),
@@ -57,4 +67,4 @@ for l in labelList:
             except:
                 print('Failed in: '+l)
 
-summary.to_csv('../out/kernel_summary.csv')
+summary.to_csv('../out/kernel_summary2.csv')

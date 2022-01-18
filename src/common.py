@@ -48,40 +48,80 @@ class kernels:
     def __init__(self, fileName):
         self.spkSummary = pd.read_csv(fileName, parse_dates=[2,3], index_col=0)
         
+    def kernalDateString(self, stringIn):
+        # If last letter is U then skip that
+        if stringIn[-1] == 'U':
+            version = 'U'
+            end = -2
+        else:
+            version = stringIn[-2]
+            end = -1
+        if stringIn[end] == 'R':
+            reconPred = 1
+        else:
+            reconPred = 0
+        dateStr = stringIn[:end]
+        date = pd.Timestamp(year=int('20'+dateStr[0:2]), month=int(dateStr[2:4]), day=int(dateStr[4:6]))
+        return [date, reconPred, version]
+        
     def requiredKernels(self, spacecraftTime):
         fullList = []
         for l in self.spkSummary.index:
             if self.spkSummary.loc[l,'Start'] < spacecraftTime and self.spkSummary.loc[l,'Stop'] > spacecraftTime:
-                fullList.append(l)
+                splitFileName = l.split('.')[0].split('_')
+                #print(l)
+                if (splitFileName[1] in ['SCPSE','SK','PE']):
+                    dateInfo = self.kernalDateString(splitFileName[0])
+                    fullList.append(dateInfo.__add__([splitFileName[1],l]))
     
         shortList = []
+        #for i in range(0,len(fullList)):
+        #    splitPoint = fullList[i].find('_')
+        #    if (splitPoint == -1):
+        #        # No underscore, call this now
+        #        shortList.append(fullList[i])
+        #    else:
+        #        if ((fullList[i][-1] == 'P') or (fullList[i][-1] == 'R')):
+        #            # Predicted or reconstructed tag, ignore
+        #            splitPoint = splitPoint - 1
+        #        best = True
+        #        for j in range(i+1,len(fullList)):
+        #            if (fullList[i][splitPoint:] == fullList[j][splitPoint:]):
+        #                # Identical tails so compare starts
+        #                stri = fullList[i][:splitPoint]
+        #                strj = fullList[j][:splitPoint]
+        #                if ( str.isalpha(stri[-1]) and str.isalpha(strj[-1]) ):
+        #                    # End of both strings are letters so can comare versions
+        #                    if (stri[-1] < strj[-1]):
+        #                        # Lower version so drop
+        #                        best = False
+        #                if (stri[0:6].isdigit() and strj[0:6].isdigit()):
+        #                    datei = pd.Timestamp(year=int('20'+stri[0:2]), month=int(stri[2:4]), day=int(stri[4:6]))
+        #                    datej = pd.Timestamp(year=int('20'+strj[0:2]), month=int(strj[2:4]), day=int(strj[4:6]))
+        #                    if (datei < datej):
+        #                        best = False
+        #        if best:
+        #            shortList.append(fullList[i])
         for i in range(0,len(fullList)):
-            splitPoint = fullList[i].find('_')
-            if (splitPoint == -1):
-                # No underscore, call this now
-                shortList.append(fullList[i])
-            else:
-                if ((fullList[i][-1] == 'P') or (fullList[i][-1] == 'R')):
-                    # Predicted or reconstructed tag, ignore
-                    splitPoint = splitPoint - 1
-                best = True
-                for j in range(i+1,len(fullList)):
-                    if (fullList[i][splitPoint:] == fullList[j][splitPoint:]):
-                        # Identical tails so compare starts
-                        stri = fullList[i][:splitPoint]
-                        strj = fullList[j][:splitPoint]
-                        if ( str.isalpha(stri[-1]) and str.isalpha(strj[-1]) ):
-                            # End of both strings are letters so can comare versions
-                            if (stri[-1] < strj[-1]):
-                                # Lower version so drop
+            #print(fullList[i])
+            best = True
+            for j in range(0,len(fullList)):
+                if (i != j) and (fullList[i][3] == fullList[j][3]):
+                    if fullList[i][1] >= fullList[j][1]:
+                        # Reconstructed beats predicted
+                        if fullList[i][2] >= fullList[j][2]:
+                            # Higher version letter beats lower
+                            if fullList[i][0] < fullList[j][0]:
+                                # If here the date is lower 
                                 best = False
-                        if (stri[0:6].isdigit() and strj[0:6].isdigit()):
-                            datei = pd.Timestamp(year=int('20'+stri[0:2]), month=int(stri[2:4]), day=int(stri[4:6]))
-                            datej = pd.Timestamp(year=int('20'+strj[0:2]), month=int(strj[2:4]), day=int(strj[4:6]))
-                            if (datei < datej):
-                                best = False
-                if best:
-                    shortList.append(fullList[i])
+                        else:
+                            best = False
+                    else:
+                        best = False
+            if best:
+                #print('Best')
+                shortList.append(fullList[i][4])
+                
         return shortList
     
 def processImg(fileName):
